@@ -8,6 +8,206 @@
 ]]></content>
   </entry>
   <entry>
+    <title>SpringAOP</title>
+    <url>/2021/02/18/SpringAOP/</url>
+    <content><![CDATA[<h1 id="spring-学习总结：Spring核心技术-Spring-AOP"><a href="#spring-学习总结：Spring核心技术-Spring-AOP" class="headerlink" title="spring 学习总结：Spring核心技术-Spring AOP"></a>spring 学习总结：Spring核心技术-Spring AOP</h1><p><strong>SpringAOP的核心其实就是代理模式</strong></p>
+<h2 id="1-代理模式"><a href="#1-代理模式" class="headerlink" title="1.代理模式"></a>1.代理模式</h2><p>代理模式是一种常见的设计模式，它提供间接对目标对象访问的方式，通过代理对象访问目标对象，从而在在目标对象现有的功能能上，增加额外的功能补充，实现扩展目标对象的功能</p>
+<p>即：==在不改变目标对象功能的基础上，使用代理对象，可以给目标对象添加的额外的功能。==</p>
+<p>例如，</p>
+<p>Web层调用Service层，完成业务逻辑处理：</p>
+<p><img src="D:\software\HexoBlog\blog\source_posts\imagies\SpringAOP.1.png" alt="1"></p>
+<p>在完成业务逻辑处理之外，往往需要再完成一些其他辅助工作，例如日志记录、事务管理、权限判断、参数处理等，但是最好不改变原有的service层代码，那么此时可以使用代理对象再完成此功能：</p>
+<p><img src="D:\software\HexoBlog\blog\source_posts\imagies\SpringAOP.2.png" alt="SpringAOP.2"></p>
+<p>代理模式主要包含三个角色：</p>
+<ul>
+<li><p>主题类角色</p>
+<p>可以是接口，也可以是抽象类，需要让目标对象和代理对象去实现或者继承，目的是为了让目标对象和代理对象具有相同的方法</p>
+</li>
+<li><p>目标类角色</p>
+<p>它的对象就是目标对象，核心业务逻辑的具体执行者代理类角色它的对象就是代理对象，内部含有对真实目标对象的引用，负责对目标对象方法的调用，并且在调用前后进行预处理</p>
+</li>
+<li><p>代理类角色</p>
+<p>它的对象就是代理对象，内部含有对真实目标对象的引用，负责对目标对象方法的调用，并且在调用前后进行预处理</p>
+</li>
+</ul>
+<p>##2.静态代理</p>
+<p>静态代理是代理模式的实现方式之一，在程序运行前，手动创建代理类，从而实现对目标类中的方法进行增强。</p>
+<h2 id="3-动态代理"><a href="#3-动态代理" class="headerlink" title="3.动态代理"></a>3.动态代理</h2><p>静态代理中，目标类与代理类是一一对应，并且是提前写好的，如果多个目标类需要被代理，那么就需要在程序运行之前建立多个代理类为之代理。</p>
+<p>动态代理则是在程序运行期间，<code>采用字节码技术/反射技术，动态生成的一个代理对象，从而实现目标对象中方法的增强。</code></p>
+<p>例如，Mybaits中有这样的代码：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">IUserMapper mapper = sqlSession.getMapper(IUserMapper.class);</span><br><span class="line">mapper.findUserById(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+<p>该方法就是在程序运行期间，动态生成映射接口的一个实现类对象，这个实现类对象就是动态代理对象。该代理对象就可以实现使用xml文件中的sql语句，结合内部封装的JDBC代码来完成数据库的交互，而成完成查询功能。</p>
+<p><code>注意，在动态代理中，代理类是在运行时期生成的。因此，相比静态代理，动态代理可以很方便地对目标类的相关方法进行统一增强处理</code></p>
+<p>一般实现动态代理的方式有两种：</p>
+<ul>
+<li>JDK动态代理（重要，需要掌握）</li>
+<li>CGLIB动态代理</li>
+</ul>
+<p>###3.1 JDK动态代理</p>
+<p>==要求目标对象和代理对象实现同一个接口==</p>
+<p>原理：</p>
+<p>JDK动态代理主要是借助==java.lang.reflect.Proxy==这个类生成代理对象</p>
+<p>Proxy类中的 ==newProxyInstance== 方法，可以在运行启动期间，动态生成指定接口的代理类对象：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> java.lang.reflect;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Proxy</span> <span class="keyword">implements</span> <span class="title">java</span>.<span class="title">io</span>.<span class="title">Serializable</span> </span>&#123;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">* loader,目标类的类加载器</span></span><br><span class="line"><span class="comment">* interfaces，目标类所实现的接口，可以是多个</span></span><br><span class="line"><span class="comment">* InvocationHandler，InvocationHandler接口的实现类对象</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Object <span class="title">newProxyInstance</span><span class="params">(ClassLoader loader,Class&lt;?&gt;[]interfaces,InvocationHandler h)</span><span class="keyword">throws</span> IllegalArgumentException</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">    </span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>java.lang.reflect.InvocationHandler接口中只有一个抽象方法</code></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> java.lang.reflect;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">InvocationHandler</span> </span>&#123;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">* proxy,将来动态生成的代理类对象</span></span><br><span class="line"><span class="comment">* method，将来需要代理的目标对象中的方法</span></span><br><span class="line"><span class="comment">* args，将来调用目标对象方法时所传入的参数列表</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> Throwable</span>; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>在实际的操作中，主要使用的是第二和第三个参数</code></p>
+<p><strong>例如，编写一个方法，可以给任意指定目标对象（必须实现接口）产生动态代理对象，该动态代理对象的作用是在完成目标对象中的功能之前，进行日志记录，输出 “xxx方法被调用了”</strong></p>
+<p><strong>目标类：</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.pigpeng.proxy;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Target</span> <span class="keyword">implements</span> <span class="title">Singer</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sing</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">&quot;目标对象唱歌&quot;</span>);</span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>动态代理：</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.pigpeng.proxy;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.InvocationHandler;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Method;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Proxy;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyPrxoyFactory</span> </span>&#123;</span><br><span class="line"><span class="meta">@SuppressWarnings(&quot;unchecked&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; <span class="function">T <span class="title">getProxy</span><span class="params">(T target)</span></span>&#123;</span><br><span class="line">    Class&lt;?&gt; c = target.getClass();</span><br><span class="line">    ClassLoader classLoader = c.getClassLoader();</span><br><span class="line">    Class&lt;?&gt;[] interfaces = c.getInterfaces();</span><br><span class="line">    InvocationHandler h = <span class="keyword">new</span> MyInvocationHandler(target);</span><br><span class="line">    T proxy = (T) Proxy.newProxyInstance(classLoader, interfaces, h);</span><br><span class="line">    <span class="keyword">return</span> proxy;</span><br><span class="line"> &#125;</span><br><span class="line">    </span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">MyInvocationHandler</span> <span class="keyword">implements</span> <span class="title">InvocationHandler</span></span>&#123;</span><br><span class="line">	<span class="keyword">private</span> Object target;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MyInvocationHandler</span><span class="params">(Object target)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.target = target;</span><br><span class="line">     &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">     <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span></span></span><br><span class="line"><span class="function">    Throwable </span>&#123;</span><br><span class="line">    String className = target.getClass().getName();</span><br><span class="line">    String methodName = method.getName();</span><br><span class="line">    System.out.println(className+<span class="string">&quot; 类型对象中的 &quot;</span>+methodName+<span class="string">&quot; 方法被调用</span></span><br><span class="line"><span class="string">    了&quot;</span>);</span><br><span class="line">    Object result = method.invoke(target, args);</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line"> 		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>测试：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.pigpeng.proxy;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyPrxoyFactoryTest</span> </span>&#123;</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    Singer target = <span class="keyword">new</span> Target();</span><br><span class="line">    Singer proxy = MyPrxoyFactory.getProxy(target);</span><br><span class="line">    proxy.sing();</span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>运行结果：</p>
+<figure class="highlight css"><table><tr><td class="code"><pre><span class="line"><span class="selector-tag">com</span><span class="selector-class">.pigpeng</span><span class="selector-class">.proxy</span><span class="selector-class">.Target</span> 类型对象中的 <span class="selector-tag">sing</span> 方法被调用了</span><br><span class="line">目标对象唱歌</span><br></pre></td></tr></table></figure>
+<p><code>此时getProxy方法返回的代理对象，不仅可以代理Singer接口的实现对象（目标对象），还可以代理任意接口的实现对象（目标对象），在不改变原目标对象中代码的情况下，为其添加日志输出功能！</code></p>
+<p>###3.2 CGLIB动态代理</p>
+<p>==要求：让目标类成为代理类的父类。==</p>
+<p>使用JDK动态代理，有一个前提条件，就是目标对象必须实现了一个或多个接口，那么产生的代理对象就是用来代理这个接口中的方法。</p>
+<ul>
+<li>但是如果目标对象没有实现任何接口，那么就不能使用JDK动态代理，这时候可以使用CGLIB的动态代理</li>
+<li>CGLIB通过ASM动态操作指令，生成了被代理类的子类，如果目标类是final修饰的，则不能够被代理。</li>
+<li>CGLIB生成的代理对象，其实是目标对象的<strong>子类型</strong>对象，并重写了目标类中所有的==<strong>非</strong>private、<strong>非</strong>final(避免无法继承重写)==的方法，从而完成这些方法的代理工作。</li>
+</ul>
+<p><code>注意 使用CGLIB动态代理需要导入cglib和asm的jar包</code></p>
+<h2 id="4-Spring-AOP"><a href="#4-Spring-AOP" class="headerlink" title="4. Spring AOP"></a>4. Spring AOP</h2><p>###4.1AOP概述</p>
+<p>在软件业中，AOP：Aspect Oriented Programming，意为：**==面向切面编程==<strong>，通过预编译方式和运行期间动态代理实现程序功能的统一维护的一种技术。             ·</strong><code>把切面类的代码动态的织入到指定切入点（方法）上执行</code>**·</p>
+<p>AOP是OOP的延续，是软件开发中的一个热点，也是Spring框架中的一个重要内容，是函数式编程的一种衍生范型。</p>
+<p>利用AOP可以对业务逻辑的各个部分进行隔离，从而使得业务逻辑各部分之间的==耦合度降低==，==提高程序的可重用性==，同时==提高了开发的效率==。</p>
+<p>简单来说，将程序中重复的代码抽取出来，在程序执行的时候，利用动态代理技术，<strong>在不修改源码的基础上</strong>，把抽取出来的代码，在<strong>重新织入到原有的程序中</strong>，对现有的功能进行<strong>动态的增强</strong>。</p>
+<h3 id="4-2特点"><a href="#4-2特点" class="headerlink" title="4.2特点"></a>4.2特点</h3><p>在程序运行期间，不修改源码对已有方法进行增强，这样操作带来的<strong>好处</strong>：</p>
+<ul>
+<li>减少代码重复</li>
+<li>提高开发效率</li>
+<li>提高可维护性</li>
+</ul>
+<h3 id="4-3实现"><a href="#4-3实现" class="headerlink" title="4.3实现"></a>4.3实现</h3><p>5.3 <strong>实现</strong></p>
+<p>Spring框架中，会自动根据目标对象是否实现了接口，来选择使用JDK动态代理的方式来实现，还是使用CGLIB技术来实现。</p>
+<h3 id="4-4-常用术语"><a href="#4-4-常用术语" class="headerlink" title="4.4 常用术语"></a>4.4 常用术语</h3><ul>
+<li><p><strong>切面/切面类（aspect）</strong></p>
+<p>存在于代理对象中。将来要被织入到方法执行 前/后/异常 的时候去执行的代码片段连接点（joinpoint）</p>
+<p>Spring中的连接点是目标对象里面需要被代理的方法，默认情况下是目标对象中所有非final修饰的方法</p>
+<p><strong>如果不是在</strong>SpringAOP<strong>中，</strong>（连接点）joinPoint<strong>可能还会是属性</strong></p>
+</li>
+<li><p><strong>切入点（pointCut）</strong></p>
+<p>存在于目标对象中。一组连接点的集合，就是一个切入点。因为连接点就是方法(spring中是这样)，所有一个切入点也是</p>
+<p>一组方法的集合</p>
+</li>
+<li><p><strong>通知/拦截器（advice）</strong></p>
+<p>控制 切面/切面类 将来要在目标对象中方法的什么位置执行，例如方法的前面或者后面或者抛异常</p>
+<p>的时候</p>
+<ul>
+<li><p>通知类型</p>
+<p>1.前置通知(Before):在目标方法被调用之前调用<br>通知功能;<br>2.后置通知(After):在目标方法执行完成之后调<br>用通知，此时不会关心方法的输出是什么;<br>3.最终通知(After-returning):在目标方法成功执<br>行之后调用通知;<br>4.异常通知(After-throwing)︰在目标方法抛出异<br>常后调用通知;<br>5.环绕通知(Around)︰在被通知的方法调用之前<br>和调用之后执行自定义的行为。</p>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p><strong>织入（wave）</strong></p>
+<p>将切面类织入到指定方法中去执行的动作</p>
+</li>
+<li><p><strong>目标对象（target）</strong></p>
+<p>需要被代理的对象，一般是代理目标对象的一个或多个指定的方法</p>
+</li>
+<li><p><strong>代理对象（proxy）</strong></p>
+<p>代理目标对象，在完成核心功能的前提下，添加额外的代码去执行</p>
+</li>
+</ul>
+<h3 id="4-5-结合术语总结AOP过程"><a href="#4-5-结合术语总结AOP过程" class="headerlink" title="4.5 结合术语总结AOP过程"></a>4.5 结合术语总结AOP过程</h3><ol>
+<li>从目标对象中获取<strong>切入点</strong>(<code>一组连接点(需要被动态增强功能的方法)的集合</code>)</li>
+<li>编写<strong>切面类</strong>(<code>增强切入点功能的代码片段</code>)</li>
+<li>准备<strong>通知/拦截器</strong>(<code>切入点需要增强功能的位置</code>)</li>
+<li>在切入点中<strong>通知</strong>的位置(前/后/环绕/异常)<strong>织入</strong> <strong>切面类</strong>中的代码增强功能</li>
+</ol>
+<h3 id="4-6注解"><a href="#4-6注解" class="headerlink" title="4.6注解"></a>4.6注解</h3><p>####4.6.1AOP配置部分的注解方式</p>
+<p>(使用的是AspectJ框架)说明：</p>
+<p>所在包：org.aspectj.lang.annotation</p>
+<p>AspectJ框架是专门实现AOP功能的一个框架，Spring中AOP功能也是依赖于AspectJ来实现的</p>
+<p>1、 @Aspect</p>
+<p>声明该类是一个切面类</p>
+<p>2、 @Before(“切入点”)</p>
+<p>声明方法为前置通知，value属性，用来指定引用的切入点是谁</p>
+<p>3、 @AfterReturning(“切入点”)</p>
+<p>声明方法为后置通知，value属性，用来指定引用的切入点是谁</p>
+<p>4、 @AfterThrowing(“切入点”)</p>
+<p>声明方法为异常通知，value属性，用来指定引用的切入点是谁</p>
+<p>5、 @After(“切入点”)</p>
+<p>声明方法为最终通知，value属性，用来指定引用的切入点是谁</p>
+<p>6、 @Around(“切入点”)</p>
+<p>声明方法为环绕通知，value属性，用来指定引用的切入点是谁</p>
+<p>7、 @Pointcut(“execution(。。。。) </p>
+<p>定义切入点（一组方法的集合）</p>
+<p><strong>xml配置与注解配置切面类对照表</strong></p>
+<table>
+<thead>
+<tr>
+<th>操作</th>
+<th>XML</th>
+<th>注解</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>指定容器中哪个对象是切面类对象</td>
+<td>&lt;aop:aspect id=”aspect” ref=”类名”&gt;</td>
+<td>@Aspect</td>
+</tr>
+<tr>
+<td>指定切入点</td>
+<td>&lt;aop:pointcut id=”方法名” expression=”excution()”/&gt;</td>
+<td>在方法上@Pointcut(“execution(。。。)”)</td>
+</tr>
+<tr>
+<td>前置通知，在切入点执行之前执行</td>
+<td><a href="aop:before">aop:before</a></td>
+<td>@Before(“pointcut1()”)</td>
+</tr>
+<tr>
+<td>后置通知，在切入点执行后执行，发生异常不执行</td>
+<td><a href="aop:after-returning">aop:after-returning</a></td>
+<td>@AfterReturning(“pointcut1()”)</td>
+</tr>
+<tr>
+<td>异常通知，在切入点发生异常时执行</td>
+<td><a href="aop:after-throwing">aop:after-throwing</a></td>
+<td>@AfterThrowing(“pointcut1()”)</td>
+</tr>
+<tr>
+<td>最终通知，在切入点执行之后执行，发生异常也执行</td>
+<td><a href="aop:after">aop:after</a></td>
+<td>@After(“pointcut1()”)</td>
+</tr>
+<tr>
+<td>环绕通知，在切入点执行之前和执行后各自执行一部分</td>
+<td><a href="aop:around">aop:around</a></td>
+<td>@Around(“pointcut1()”)</td>
+</tr>
+</tbody></table>
+<p><strong>切面类的注解方式：</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.pigpeng.aspect; </span><br><span class="line"><span class="keyword">import</span> org.aspectj.lang.ProceedingJoinPoint; </span><br><span class="line"><span class="keyword">import</span> org.aspectj.lang.annotation.After; </span><br><span class="line"><span class="keyword">import</span> org.aspectj.lang.annotation.AfterReturning; </span><br><span class="line"><span class="keyword">import</span> org.aspectj.lang.annotation.AfterThrowing; </span><br><span class="line"><span class="keyword">import</span> org.aspectj.lang.annotation.Around; </span><br><span class="line"><span class="keyword">import</span> org.aspectj.lang.annotation.Aspect; </span><br><span class="line"><span class="keyword">import</span> org.aspectj.lang.annotation.Before; </span><br><span class="line"><span class="keyword">import</span> org.aspectj.lang.annotation.Pointcut; </span><br><span class="line"><span class="keyword">import</span> org.springframework.stereotype.Component; </span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@Aspect</span> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyAspect</span> </span>&#123; </span><br><span class="line">    </span><br><span class="line">    <span class="comment">//注意，方法名字就是这个切入点的名字 </span></span><br><span class="line">    <span class="meta">@Pointcut(&quot;execution(* com.pigpeng.service..*.*(..))&quot;)</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">pointcut1</span><span class="params">()</span> </span>&#123;&#125; </span><br><span class="line">    </span><br><span class="line">    <span class="comment">//注意，方法名字就是这个切入点的名字 </span></span><br><span class="line">    <span class="meta">@Pointcut(&quot;execution(* com.pigpeng.service..*.delete*(..))&quot;)</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">pointcut2</span><span class="params">()</span> </span>&#123;&#125; </span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Before(&quot;pointcut1()&quot;)</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">beforAdvice</span><span class="params">()</span> </span>&#123; </span><br><span class="line">        System.out.println(<span class="string">&quot;前置通知&quot;</span>); </span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@AfterReturning(&quot;pointcut1()&quot;)</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">afterReturn</span><span class="params">()</span> </span>&#123; </span><br><span class="line">        System.out.println(<span class="string">&quot;后置通知&quot;</span>); </span><br><span class="line">    &#125;</span><br><span class="line">   </span><br><span class="line">    <span class="meta">@AfterThrowing(&quot;pointcut1()&quot;)</span> </span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">throwable</span><span class="params">()</span> </span>&#123; </span><br><span class="line">        System.out.println(<span class="string">&quot;异常通知&quot;</span>); </span><br><span class="line">    &#125;</span><br><span class="line">   </span><br><span class="line">    <span class="meta">@After(&quot;pointcut1()&quot;)</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">after</span><span class="params">()</span> </span>&#123; </span><br><span class="line">        System.out.println(<span class="string">&quot;最终通知&quot;</span>); </span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="meta">@Around(&quot;pointcut1()&quot;)</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">around</span><span class="params">(ProceedingJoinPoint joinPoint)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;环绕通知：前&quot;</span>); </span><br><span class="line">        <span class="comment">// 获取执行方法的参数 </span></span><br><span class="line">        Object[] args = joinPoint.getArgs(); </span><br><span class="line">        joinPoint.proceed(args); </span><br><span class="line">        System.out.println(<span class="string">&quot;环绕通知: 后&quot;</span>); </span><br><span class="line">    &#125; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="4-6-2配置类代替xml配置"><a href="#4-6-2配置类代替xml配置" class="headerlink" title="4.6.2配置类代替xml配置"></a>4.6.2配置类代替xml配置</h4><p>XML配置文件的注解方式（配置类）</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.pigpeng.config; </span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.ComponentScan; </span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.Configuration; </span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.EnableAspectJAutoProxy; </span><br><span class="line"><span class="meta">@Configuration</span> </span><br><span class="line"><span class="meta">@ComponentScan(&quot;com.pigpeng&quot;)</span> </span><br><span class="line"><span class="meta">@EnableAspectJAutoProxy</span> <span class="comment">//</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AOPConfig</span> </span>&#123; </span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>@ComponentScan(&quot;com.briup&quot;)用来指定扫描com.briup包及其子包中类里面的注解信息</code></p>
+<p><code>@EnableAspectJAutoProxy用来告诉当前spring配置中使用了AspectJ框架的注解</code></p>
+<p><code>AspectJ框架是专门实现AOP功能的一个框架，Spring中AOP功能也是依赖于AspectJ来实现的</code></p>
+<p><code>注意：配置方式变化后，需要修改测试类上关于配置方式的注解</code></p>
+<p>测试注解方式配置spring的时候需要将测试类上的</p>
+<p>@ContextConfiguration(locations = “classpath:applicationContext.xml”)</p>
+<p><strong>改为：</strong></p>
+<p>@ContextConfiguration(classes = AOPConfig.class（配置类的类名）) </p>
+]]></content>
+  </entry>
+  <entry>
+    <title>java项目上出现感叹号</title>
+    <url>/2020/11/25/java%E9%A1%B9%E7%9B%AE%E4%B8%8A%E5%87%BA%E7%8E%B0%E6%84%9F%E5%8F%B9%E5%8F%B7/</url>
+    <content><![CDATA[<p>项目上出现红色感叹号↓</p>
+<p>  可能的原因：一是jdk的版本不符合<br>            二是可能jar包不兼容了</p>
+<a id="more"></a>    
+<p>解决办法：<br>   原因一：jdk的版本不符合<br>        jdk版本不符合，将项目的jdk换成自己配置好的jdk。↓<br>        右键项目——&gt;build path——&gt;Configuer build path——&gt; 删掉错误的jdk版本 ——&gt; add library ——&gt; jre system library ——&gt; 选择正确的jdk版本——&gt; apply and close<br>   原因二： jar包有问题。<br>        右击项目——&gt;  build path ——&gt; configure bulid path ——&gt; libraries，点开各个jar包，将带叉号的删除掉重导包 或者使用maven管理项目</p>
+]]></content>
+  </entry>
+  <entry>
     <title>String&amp;StringBuffer&amp;StringBuilder</title>
     <url>/2021/01/05/String-StringBuffer-StringBuilder/</url>
     <content><![CDATA[<p>关于String &amp; StringBuffer &amp; StringBuilder</p>
@@ -32,15 +232,6 @@
 
 （3）单线程操作字符串缓冲区下操作大量数据 StringBuilder。</code></pre>
 <hr>
-]]></content>
-  </entry>
-  <entry>
-    <title>java项目上出现感叹号</title>
-    <url>/2020/11/25/java%E9%A1%B9%E7%9B%AE%E4%B8%8A%E5%87%BA%E7%8E%B0%E6%84%9F%E5%8F%B9%E5%8F%B7/</url>
-    <content><![CDATA[<p>项目上出现红色感叹号↓</p>
-<p>  可能的原因：一是jdk的版本不符合<br>            二是可能jar包不兼容了</p>
-<a id="more"></a>    
-<p>解决办法：<br>   原因一：jdk的版本不符合<br>        jdk版本不符合，将项目的jdk换成自己配置好的jdk。↓<br>        右键项目——&gt;build path——&gt;Configuer build path——&gt; 删掉错误的jdk版本 ——&gt; add library ——&gt; jre system library ——&gt; 选择正确的jdk版本——&gt; apply and close<br>   原因二： jar包有问题。<br>        右击项目——&gt;  build path ——&gt; configure bulid path ——&gt; libraries，点开各个jar包，将带叉号的删除掉重导包 或者使用maven管理项目</p>
 ]]></content>
   </entry>
   <entry>
