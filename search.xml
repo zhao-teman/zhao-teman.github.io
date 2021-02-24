@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Maven项目导入oracle的依赖，报错</title>
+    <url>/2020/12/01/Maven%E9%A1%B9%E7%9B%AE%E5%AF%BC%E5%85%A5oracle%E7%9A%84%E4%BE%9D%E8%B5%96%EF%BC%8C%E9%A1%B9%E7%9B%AE%E6%8A%A5%E9%94%99/</url>
+    <content><![CDATA[<p>首先简单介绍一下Maven<br>    Maven是Apache下的一个开源免费的项目，主要是用来管理项目，实现语言是java<br>    Maven是基于项目对象模型(POM，Project Object Model)，把项目的每个环节抽<br>象，单独定义，这样就可以对一个项目进行各个环节的程序化管理，并且允许用户进<br>行扩展，满足用户定制化的需求。<br>   <a id="more"></a><br>   那就直接说问题了<br>   因为Oracle作为商业软件 apache的中央仓库下面是没有Oracle的jar包的<br>所以根据maven项目管理的机制，你的本地仓库如果没有这个jar包，maven去中央仓库<br>找是找不到的所以需要我们自己下载</p>
+<p>下载好需要的jar包之后<br>在jar所在目录路径中，打开cmd执行以下命令<br>比如使用的是Oracle6(Oracle7，Oracle8对应的安装命令改掉数字就行)<br>mvn install:install-file -DgroupId=com.oracle -DartifactId=ojdbc6 -Dversion=6 -Dpackaging=jar -Dfile=ojdbc6.jar -DgeneratePom=true<br>把已有的jar直接安装到仓库中<br>再在使用的时候引入依赖就没问题了！</p>
+]]></content>
+  </entry>
+  <entry>
     <title>SpringAOP</title>
     <url>/2021/02/18/SpringAOP/</url>
     <content><![CDATA[<h1 id="spring-学习总结：Spring核心技术-Spring-AOP"><a href="#spring-学习总结：Spring核心技术-Spring-AOP" class="headerlink" title="spring 学习总结：Spring核心技术-Spring AOP"></a>spring 学习总结：Spring核心技术-Spring AOP</h1><p><strong>SpringAOP的核心其实就是代理模式</strong></p>
@@ -218,13 +225,6 @@
 
 （3）单线程操作字符串缓冲区下操作大量数据 StringBuilder。</code></pre>
 <hr>
-]]></content>
-  </entry>
-  <entry>
-    <title>Maven项目导入oracle的依赖，报错</title>
-    <url>/2020/12/01/Maven%E9%A1%B9%E7%9B%AE%E5%AF%BC%E5%85%A5oracle%E7%9A%84%E4%BE%9D%E8%B5%96%EF%BC%8C%E9%A1%B9%E7%9B%AE%E6%8A%A5%E9%94%99/</url>
-    <content><![CDATA[<p>首先简单介绍一下Maven<br>    Maven是Apache下的一个开源免费的项目，主要是用来管理项目，实现语言是java<br>    Maven是基于项目对象模型(POM，Project Object Model)，把项目的每个环节抽<br>象，单独定义，这样就可以对一个项目进行各个环节的程序化管理，并且允许用户进<br>行扩展，满足用户定制化的需求。<br>   <a id="more"></a><br>   那就直接说问题了<br>   因为Oracle作为商业软件 apache的中央仓库下面是没有Oracle的jar包的<br>所以根据maven项目管理的机制，你的本地仓库如果没有这个jar包，maven去中央仓库<br>找是找不到的所以需要我们自己下载</p>
-<p>下载好需要的jar包之后<br>在jar所在目录路径中，打开cmd执行以下命令<br>比如使用的是Oracle6(Oracle7，Oracle8对应的安装命令改掉数字就行)<br>mvn install:install-file -DgroupId=com.oracle -DartifactId=ojdbc6 -Dversion=6 -Dpackaging=jar -Dfile=ojdbc6.jar -DgeneratePom=true<br>把已有的jar直接安装到仓库中<br>再在使用的时候引入依赖就没问题了！</p>
 ]]></content>
   </entry>
   <entry>
